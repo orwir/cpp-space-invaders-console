@@ -137,7 +137,7 @@ void SpaceInvaders::render()
     if (m_players > 1)
     {
         startX++;
-        length = sprintf_s(buffer, "P1: ");
+        length = sprintf_s(buffer, "P2: ");
         getRenderSystem()->drawText(startX, 0, buffer, ConsoleColor_Yellow, ConsoleColor_Black);
         startX += length;
 
