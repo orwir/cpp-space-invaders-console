@@ -60,7 +60,7 @@ void Game::update(float dt)
 
 GameObject* Game::initializeObject(GameObject* object, GameObjectType type, float x, float y, char symbol, ConsoleColor color, ConsoleColor backgroundColor)
 {
-    m_objects.insert(m_objects.end(), object);
+    m_objects.push_back(object);
 
     object->setType(type);
     object->setX(x);

@@ -11,10 +11,10 @@ class GameObject
 public:
     GameObject();
 
-    void render(RenderSystem* rs);
-    void update(float dt);
+    virtual void render(RenderSystem* rs);
+    virtual void update(float dt);
 
-    bool intersects(GameObject* object);
+    virtual bool intersects(GameObject* object);
 
     void setType(GameObjectType type) { m_type = type; }
     GameObjectType getType() { return m_type; }

@@ -9,14 +9,14 @@
 class Game
 {
 public:
-    void setupSystem();
-    void initialize();
-    bool frame();
-    void shutdown();
+    virtual void setupSystem();
+    virtual void initialize();
+    virtual bool frame();
+    virtual void shutdown();
 
 protected:
-    void render();
-    void update(float dt);
+    virtual void render();
+    virtual void update(float dt);
 
     GameObject* initializeObject(GameObject* object, GameObjectType type, float x, float y, char symbol, ConsoleColor color, ConsoleColor backgroundColor);
     void destroyObject(GameObject* object);

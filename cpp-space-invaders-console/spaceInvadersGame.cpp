@@ -40,55 +40,13 @@ void SpaceInvaders::initialize()
     }
 }
 
+bool contains(std::vector<GameObject*> vector, GameObject* object)
+{
+    return std::find(vector.begin(), vector.end(), object) != vector.end();
+}
+
 void SpaceInvaders::update(float dt)
 {
-    bool haveAliveAliens = false;
-
-    for (int i = 0; i < m_objects.size(); i++)
-    {
-        m_objects[i]->update(dt);
-        switch (m_objects[i]->getType())
-        {
-        case GameObjectType_Alien:
-            haveAliveAliens = true;
-            if (m_objects[i]->getY() >= LEVEL_ROWS)
-            {
-                m_isGameActive = false;
-            }
-            else
-            {
-                m_objects[i]->setXSpeed(ALIEN_AMPLITUDE * cos(m_alienAmplitudeTime));
-            }
-            break;
-
-        case GameObjectType_Bullet:
-            if (m_objects[i]->getY() < 0)
-            {
-                destroyObject(m_objects[i]);
-            }
-            else
-            {
-                for (int a = 0; a < m_objects.size(); a++)
-                {
-                    if (m_objects[i]->intersects(m_objects[a]))
-                    {
-                        destroyObject(m_objects[i]);
-                        destroyObject(m_objects[a]);
-                        break;
-                    }
-                }
-            }
-            break;
-        }
-    }
-
-    m_alienAmplitudeTime += dt;
-
-    if (!haveAliveAliens)
-    {
-        m_isGameActive = false;
-    }
-
     if (isKeyDown(VK_LEFT))
     {
         getShip()->setXSpeed(-SHIP_SPEED);
@@ -106,5 +64,68 @@ void SpaceInvaders::update(float dt)
             m_level.getRenderCellSymbolColor(CellSymbol_Bullet),
             m_level.getRenderCellSymbolBackgroundColor(CellSymbol_Bullet));
         bullet->setYSpeed(-BULLET_SPEED);
+    }
+    
+    
+    bool haveAliveAliens = false;
+    std::vector<GameObject*> deleted;
+
+    for (int i = 0; i < m_objects.size(); i++)
+    {
+        GameObject* object = m_objects[i];
+        if (contains(deleted, object))
+        {
+            continue;
+        }
+
+        object->update(dt);
+        switch (object->getType())
+        {
+        case GameObjectType_Alien:
+            haveAliveAliens = true;
+            if (object->getY() >= LEVEL_ROWS)
+            {
+                m_isGameActive = false;
+            }
+            else
+            {
+                object->setXSpeed(ALIEN_AMPLITUDE * cos(m_alienAmplitudeTime));
+            }
+            break;
+
+        case GameObjectType_Bullet:
+            if (object->getY() < 0)
+            {
+                deleted.push_back(object);
+            }
+            else
+            {
+                for (int a = 0; a < m_objects.size(); a++)
+                {
+                    if (contains(deleted, m_objects[a]))
+                    {
+                        continue;
+                    }
+                    if (object != m_objects[a] && object->intersects(m_objects[a]))
+                    {
+                        deleted.push_back(object);
+                        deleted.push_back(m_objects[a]);
+                        break;
+                    }
+                }
+            }
+            break;
+        }
+    }
+    for (int i = 0; i < deleted.size(); i++)
+    {
+        destroyObject(deleted[i]);
+    }
+
+    m_alienAmplitudeTime += dt;
+
+    if (!haveAliveAliens)
+    {
+        m_isGameActive = false;
     }
 }
