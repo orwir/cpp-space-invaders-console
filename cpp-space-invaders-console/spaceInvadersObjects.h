@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gameObject.h"
+#include <cmath>
 
 const float SHIP_SPEED = 35.0;
 const float SHIP_FIRE_COOLDOWN = 0.2;
@@ -8,25 +9,49 @@ const float SHIP_FIRE_COOLDOWN = 0.2;
 const float BULLET_SPEED = 40.0;
 
 const float ALIEN_AMPLITUDE = 7.0;
-const float ALIEN_SPEED = 0.23;
+const float ALIEN_SPEED = 0.18;
+const float ALIEN_FIRE_COOLDOWN = 2.58;
 
-const unsigned char CellSymbol_Ship   = 'S';
-const unsigned char CellSymbol_Bullet = '|';
-const unsigned char CellSymbol_Alien  = 'X';
+const unsigned char CellSymbol_Player      = 'P';
+const unsigned char CellSymbol_Bullet      = '|';
+const unsigned char CellSymbol_Alien       = 'X';
+const unsigned char CellSymbol_AlienSpread = 'S';
+const unsigned char CellSymbol_AlienBrood  = 'B';
+const unsigned char CellSymbol_AlienTank   = 'T';
 
 class Ship : public GameObject
 {
 public:
-    Ship() : GameObject()
+    Ship(int strength)
     {
-        m_fireCooldownTime = 0.0;
-        m_lives = 3;
-        m_score = 0;
+        m_strength = strength;
     }
 
     void update(float dt)
     {
         GameObject::update(dt);
+    }
+
+    int getStrength() { return m_strength; }
+    bool tryKill() { return ((--m_strength) <= 0); }
+
+private:
+    int m_strength;
+};
+
+class Player : public Ship
+{
+public:
+    Player(int strength, float fireCooldown) : Ship(strength)
+    {
+        m_score = 0;
+        m_fireCooldown = fireCooldown;
+        m_currentFireCooldown = 0;
+    }
+
+    void update(float dt)
+    {
+        Ship::update(dt);
         if (getX() < 0)
         {
             setX(0);
@@ -35,43 +60,36 @@ public:
         {
             setX(SCREEN_WIDTH - 1);
         }
-        if (m_fireCooldownTime > 0)
+        if (m_fireCooldown > 0)
         {
-            m_fireCooldownTime -= dt;
+            m_currentFireCooldown -= dt;
         }
     }
 
-    void setFireCooldown() { m_fireCooldownTime = SHIP_FIRE_COOLDOWN; }
-    float getFireCooldown() { return m_fireCooldownTime; }
-
-    int getLives() { return m_lives; }
-    bool tryKill() { return --m_lives <= 0; }
-
     int getScore() { return m_score; }
+    void setScore(int score) { m_score = score; }
     void addScore(int score) { m_score += score; }
 
+    float getFireCooldown() { return m_currentFireCooldown; }
+    void updateFireCooldown() { m_currentFireCooldown = m_fireCooldown; }
+
 private:
-    float m_fireCooldownTime;
-    int m_lives;
     int m_score;
+    float m_fireCooldown;
+    float m_currentFireCooldown;
 };
 
-class Alien : public GameObject
+class Alien : public Ship
 {
 public:
-    Alien(int strength, int worth) : GameObject()
+    Alien(int strength, int worth) : Ship(strength)
     {
-        m_strength = strength;
         m_worth = worth;
     }
-
-    int getStrength() { return m_strength; }
-    bool tryKill() { return ((--m_strength) <= 0); }
 
     int getWorth() { return m_worth; }
 
 private:
-    int m_strength;
     int m_worth;
 };
 

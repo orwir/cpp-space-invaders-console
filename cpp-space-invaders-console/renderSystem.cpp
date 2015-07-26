@@ -40,6 +40,27 @@ void RenderSystem::clear()
     }
 }
 
+void RenderSystem::forceClear()
+{
+    for (int y = 0; y < SCREEN_HEIGHT; y++)
+    {
+        for (int x = 0; x < SCREEN_WIDTH; x++)
+        {
+            m_backBuffer[y][x].symbol = 0;
+            m_backBuffer[y][x].symbolColor = ConsoleColor_Grey;
+            m_backBuffer[y][x].backgroundColor = ConsoleColor_Black;
+
+            m_screenBuffer[y][x] = m_backBuffer[y][x];
+
+            setConsoleCursor(x, y);
+            setConsoleColor(m_screenBuffer[y][x].symbolColor, m_screenBuffer[y][x].backgroundColor);
+            printf("%c", m_screenBuffer[y][x].symbol);
+        }
+    }
+    setConsoleCursor(0, 0);
+
+}
+
 void RenderSystem::drawChar(int x, int y, char symbol, ConsoleColor symbolColor, ConsoleColor backgroundColor)
 {
     if (x < 0 || y < 0 || x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT)

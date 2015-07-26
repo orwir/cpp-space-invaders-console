@@ -6,19 +6,23 @@ void Game::setupSystem()
 {
     srand(time(0));
     m_isGameActive = true;
-    m_renderSystem.initialize();
-    
-    m_clockLastFrame = 0;
+    m_isLevelEnd = false;
     m_currentLevel = 0;
-
-    m_framesCounter = 0;
-    m_framesTimeCounter = 0;
-    m_fps = 0;
+    m_renderSystem.initialize();
 }
 
 void Game::initialize()
 {
-    
+    m_renderSystem.forceClear();
+    m_isLevelEnd = false;
+
+    m_clockLastFrame = clock();
+    m_framesCounter = 0;
+    m_framesTimeCounter = 0;
+    m_fps = 0;
+
+    m_objects.clear();
+    m_subjectsForDeletion.clear();
 }
 
 bool Game::frame()
@@ -41,6 +45,28 @@ bool Game::frame()
     render();
     m_renderSystem.flush();
     update(deltaTime);
+    //delete planned objects
+    if (m_subjectsForDeletion.size() > 0)
+    {
+        for (int i = 0; i < m_subjectsForDeletion.size(); i++)
+        {
+            destroyObject(m_subjectsForDeletion[i]);
+        }
+        m_subjectsForDeletion.clear();
+    }
+    if (m_isLevelEnd)
+    {
+        m_currentLevel++;
+        m_isLevelEnd = false;
+        if (m_level.getLevelData(m_currentLevel) == levelDataEmpty)
+        {
+            m_isGameActive = false;
+        }
+        else
+        {
+            initialize();
+        }
+    }
 
     return m_isGameActive;
 }
@@ -52,6 +78,8 @@ void Game::shutdown()
         delete m_objects[i];
     }
     m_objects.clear();
+    m_renderSystem.clear();
+    m_renderSystem.flush();
 }
 
 void Game::render()
@@ -68,7 +96,10 @@ void Game::render()
 
 void Game::update(float dt)
 {
-    
+    for (int i = 0; i < m_objects.size(); i++)
+    {
+        m_objects[i]->update(dt);
+    }
 }
 
 GameObject* Game::initializeObject(GameObject* object, GameObjectType type, float x, float y, char symbol, ConsoleColor color, ConsoleColor backgroundColor)
@@ -88,4 +119,9 @@ GameObject* Game::initializeObject(GameObject* object, GameObjectType type, floa
 void Game::destroyObject(GameObject* object)
 {
     m_objects.erase(std::remove(m_objects.begin(), m_objects.end(), object), m_objects.end());
+}
+
+void Game::nextLevelOrEnd()
+{
+    m_isLevelEnd = true;
 }

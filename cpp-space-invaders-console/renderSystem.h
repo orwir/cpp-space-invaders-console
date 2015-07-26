@@ -30,6 +30,7 @@ public:
 
     void initialize();
     void clear();
+    void forceClear();
     void drawChar(int x, int y, char symbol, ConsoleColor symbolColor, ConsoleColor backgroundColor);
     void drawText(int x, int y, const char* text, ConsoleColor symbolColor, ConsoleColor backgroundColor);
     void flush();

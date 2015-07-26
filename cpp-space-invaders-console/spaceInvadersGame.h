@@ -15,14 +15,16 @@ class SpaceInvaders : public Game
 public:
     void initialize();
 
-    void setShip(Ship* ship) { m_ship = ship; }
-    Ship* getShip() { return m_ship; }
+    void setPlayer(Player* player) { m_player = player; }
+    Player* getPlayer() { return m_player; }
 
 protected:
     void render();
     void update(float dt);
 
 private:
-    Ship* m_ship;
+    Player* m_player = 0;
     float m_alienAmplitudeTime;
+    float m_alienFireCooldown;
+    float m_restartLevelCooldown;
 };
