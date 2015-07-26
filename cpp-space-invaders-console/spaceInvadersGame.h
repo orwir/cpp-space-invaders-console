@@ -19,6 +19,7 @@ public:
     Ship* getShip() { return m_ship; }
 
 protected:
+    void render();
     void update(float dt);
 
 private:

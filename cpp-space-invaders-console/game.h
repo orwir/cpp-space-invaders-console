@@ -13,6 +13,8 @@ public:
     virtual void initialize();
     virtual bool frame();
     virtual void shutdown();
+    
+    int getFps() { return m_fps; }
 
 protected:
     virtual void render();
@@ -29,4 +31,7 @@ protected:
     Level m_level;
     std::vector<GameObject*> m_objects;
 
+    int m_framesCounter;
+    float m_framesTimeCounter;
+    int m_fps;
 };

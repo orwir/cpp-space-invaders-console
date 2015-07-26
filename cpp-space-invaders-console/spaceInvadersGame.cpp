@@ -27,7 +27,7 @@ void SpaceInvaders::initialize()
             }
             case CellSymbol_Alien:
             {
-                GameObject* alien = initializeObject(new GameObject(), GameObjectType_Alien, col + 0.5, row,
+                GameObject* alien = initializeObject(new Alien(1, 5), GameObjectType_Alien, col + 0.5, row,
                     m_level.getRenderCellSymbol(symbol),
                     m_level.getRenderCellSymbolColor(symbol),
                     m_level.getRenderCellSymbolBackgroundColor(symbol));
@@ -38,6 +38,20 @@ void SpaceInvaders::initialize()
             }
         }
     }
+}
+
+void SpaceInvaders::render()
+{
+    Game::render();
+
+    for (int i = 0; i < getShip()->getLives(); i++)
+    {
+        m_renderSystem.drawChar(i * 2, 0, 3, ConsoleColor_DarkRed, ConsoleColor_Black);
+    }
+    
+    char buffer[SCREEN_WIDTH];
+    sprintf_s(buffer, "Score: %d", getShip()->getScore());
+    m_renderSystem.drawText(getShip()->getLives() * 2 + 1, 0, buffer, ConsoleColor_Grey, ConsoleColor_Black);
 }
 
 bool contains(std::vector<GameObject*> vector, GameObject* object)
@@ -58,7 +72,7 @@ void SpaceInvaders::update(float dt)
     if (isKeyDown(VK_UP) && getShip()->getFireCooldown() <= 0)
     {
         getShip()->setFireCooldown();
-        GameObject* bullet = initializeObject(new GameObject(), GameObjectType_Bullet,
+        GameObject* bullet = initializeObject(new Bullet(getShip()), GameObjectType_Bullet,
             getShip()->getX(), getShip()->getY() - 1,
             m_level.getRenderCellSymbol(CellSymbol_Bullet),
             m_level.getRenderCellSymbolColor(CellSymbol_Bullet),
@@ -108,8 +122,22 @@ void SpaceInvaders::update(float dt)
                     }
                     if (object != m_objects[a] && object->intersects(m_objects[a]))
                     {
-                        deleted.push_back(object);
-                        deleted.push_back(m_objects[a]);
+                        Bullet* bullet = (Bullet*)object;
+
+                        if (m_objects[a]->getType() == GameObjectType_Alien) {
+                            Alien* alien = (Alien*)m_objects[a];
+
+                            if (bullet->getShooter()->getType() == GameObjectType_Ship) {
+                                Ship* ship = (Ship*)bullet->getShooter();
+
+                                if (alien->tryKill())
+                                {
+                                    ship->addScore(alien->getWorth());
+                                    deleted.push_back(m_objects[a]);
+                                }
+                                deleted.push_back(bullet);
+                            }
+                        }
                         break;
                     }
                 }

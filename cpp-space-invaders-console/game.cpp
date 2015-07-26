@@ -6,13 +6,19 @@ void Game::setupSystem()
 {
     srand(time(0));
     m_isGameActive = true;
+    m_renderSystem.initialize();
+    
     m_clockLastFrame = 0;
     m_currentLevel = 0;
+
+    m_framesCounter = 0;
+    m_framesTimeCounter = 0;
+    m_fps = 0;
 }
 
 void Game::initialize()
 {
-    m_renderSystem.initialize();
+    
 }
 
 bool Game::frame()
@@ -22,7 +28,18 @@ bool Game::frame()
     float deltaTime = float(deltaClock) / CLOCKS_PER_SEC;
     m_clockLastFrame = clockNow;
 
+    m_framesCounter++;
+    m_framesTimeCounter += deltaTime;
+    if (m_framesTimeCounter >= 1.0)
+    {
+        m_framesTimeCounter -= 1.0;
+        m_fps = m_framesCounter;
+        m_framesCounter = 0;
+    }
+
+    m_renderSystem.clear();
     render();
+    m_renderSystem.flush();
     update(deltaTime);
 
     return m_isGameActive;
@@ -39,18 +56,14 @@ void Game::shutdown()
 
 void Game::render()
 {
-    m_renderSystem.clear();
-
     for (int i = 0; i < m_objects.size(); i++)
     {
         m_objects[i]->render(&m_renderSystem);
     }
 
     char buffer[SCREEN_WIDTH];
-    int length = sprintf_s(buffer, "Objects: %d", m_objects.size());
+    int length = sprintf_s(buffer, "FPS: %d", getFps());
     m_renderSystem.drawText(SCREEN_WIDTH - length, 0, buffer, ConsoleColor_Grey, ConsoleColor_Black);
-
-    m_renderSystem.flush();
 }
 
 void Game::update(float dt)
