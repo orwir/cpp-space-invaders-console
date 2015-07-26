@@ -10,7 +10,7 @@ const float BULLET_SPEED = 40.0;
 
 const float ALIEN_AMPLITUDE = 7.0;
 const float ALIEN_SPEED = 0.18;
-const float ALIEN_FIRE_COOLDOWN = 2.58;
+const float ALIEN_FIRE_COOLDOWN = 2.08;
 
 const unsigned char CellSymbol_Player      = 'P';
 const unsigned char CellSymbol_Bullet      = '|';
@@ -33,6 +33,7 @@ public:
     }
 
     int getStrength() { return m_strength; }
+    void setStrength(int strength) { m_strength = strength; }
     bool tryKill() { return ((--m_strength) <= 0); }
 
 private:

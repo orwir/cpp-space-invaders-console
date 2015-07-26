@@ -10,15 +10,20 @@ void main() {
     Screen* logo = new Logo();
     logo->show();
     delete logo;
+
+    Menu* menu = new Menu();
+    menu->show();
+    int players = menu->getSelected() + 1;
+    delete menu;
     
-    SpaceInvaders* game = new SpaceInvaders();
+    SpaceInvaders* game = new SpaceInvaders(players);
 
     game->setupSystem();
     game->initialize();
     
     while (game->frame());
 
-    Screen* end = new GameOver(game->getPlayer());
+    Screen* end = new GameOver(game->getPlayer1(), game->getPlayer2());
     end->show();
     delete end;
     

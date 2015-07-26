@@ -16,7 +16,7 @@ GameObject* CreateGameObject(unsigned char symbol)
     case CellSymbol_AlienSpread:
         return new Alien(2, 7);
     case CellSymbol_AlienBrood:
-        return new Alien(1, 10);
+        return new Alien(3, 10);
     case CellSymbol_AlienTank:
         return new Alien(5, 11);
     }
@@ -34,10 +34,12 @@ void SpaceInvaders::initialize()
 
     Game::initialize();
 
-    Player* saved = m_player;
-    m_player = 0;
+    Player* saved1 = m_player1;
+    Player* saved2 = m_player2;
+    m_player1 = 0;
+    m_player2 = 0;
     m_alienAmplitudeTime = 0.0;
-    m_alienFireCooldown = ALIEN_FIRE_COOLDOWN;
+    m_alienFireCooldown = ALIEN_FIRE_COOLDOWN - (getCurrentLevel() * 0.23);
     m_restartLevelCooldown = LEVEL_RESTART_COOLDOWN;
 
     LevelData levelData = getLevel()->getLevelData(getCurrentLevel());
@@ -50,15 +52,35 @@ void SpaceInvaders::initialize()
             {
             case CellSymbol_Player:
             {
-                Player* player = (Player*)initializeObject(CreateGameObject(symbol), GameObjectType_Ship, col + 0.5, row,
+                Player* player1 = (Player*)initializeObject(CreateGameObject(symbol), GameObjectType_Ship, col + 0.5, row,
                     getLevel()->getRenderCellSymbol(symbol),
                     getLevel()->getRenderCellSymbolColor(symbol),
                     getLevel()->getRenderCellSymbolBackgroundColor(symbol));
-                setPlayer((Player*)player);
-                if (saved != 0)
+                setPlayer1((Player*)player1);
+                if (saved1 != 0)
                 {
-                    player->setScore(saved->getScore());
+                    player1->setScore(saved1->getScore());
                 }
+
+                if (m_players > 1)
+                {
+                    Player* player2 = (Player*)initializeObject(CreateGameObject(symbol), GameObjectType_Ship, col + 0.5, row,
+                        getLevel()->getRenderCellSymbol(symbol),
+                        getLevel()->getRenderCellSymbolColor(symbol),
+                        getLevel()->getRenderCellSymbolBackgroundColor(symbol));
+                    setPlayer2(player2);
+                    if (saved2 != 0)
+                    {
+                        player2->setScore(saved2->getScore());
+                    }
+
+                    player1->setX(player1->getX() - 1);
+                    player2->setX(player2->getX() + 1);
+
+                    player1->setBackgroundColor(ConsoleColor_DarkBlue);
+                    player2->setBackgroundColor(ConsoleColor_DarkYellow);
+                }
+
                 break;
             }
             case CellSymbol_Alien:
@@ -66,12 +88,16 @@ void SpaceInvaders::initialize()
             case CellSymbol_AlienBrood:
             case CellSymbol_AlienTank:
             {
-                GameObject* alien = initializeObject(CreateGameObject(symbol), GameObjectType_Alien, col + 0.5, row,
+                Alien* alien = (Alien*)initializeObject(CreateGameObject(symbol), GameObjectType_Alien, col + 0.5, row,
                     getLevel()->getRenderCellSymbol(symbol),
                     getLevel()->getRenderCellSymbolColor(symbol),
                     getLevel()->getRenderCellSymbolBackgroundColor(symbol));
                 alien->setXSpeed(ALIEN_AMPLITUDE * cos(m_alienAmplitudeTime));
                 alien->setYSpeed(ALIEN_SPEED);
+                if (m_players > 1)
+                {
+                    alien->setStrength(alien->getStrength() * m_players);
+                }
                 break;
             }
             }
@@ -85,40 +111,90 @@ void SpaceInvaders::render()
 
     char buffer[SCREEN_WIDTH];
     int length = 0;
+    int startX = 0;
 
-    length = sprintf_s(buffer, "Level: %d", getCurrentLevel() + 1);
-    getRenderSystem()->drawText(0, 0, buffer, ConsoleColor_Grey, ConsoleColor_Black);
-
-    length += 2;
-    for (int i = 0; i < getPlayer()->getStrength(); i++)
-    {
-        getRenderSystem()->drawChar(length + i * 2, 0, 3, ConsoleColor_DarkRed, ConsoleColor_Black);
-    }
+    length = sprintf_s(buffer, "Level: %d  ", getCurrentLevel() + 1);
+    getRenderSystem()->drawText(startX, 0, buffer, ConsoleColor_Grey, ConsoleColor_Black);
+    startX += length;
     
-    sprintf_s(buffer, "Score: %d", getPlayer()->getScore());
-    getRenderSystem()->drawText(length + getPlayer()->getStrength() * 2 + 1, 0, buffer, ConsoleColor_Grey, ConsoleColor_Black);
+    if (m_players > 1)
+    {
+        length = sprintf_s(buffer, "P1: ");
+        getRenderSystem()->drawText(startX, 0, buffer, ConsoleColor_Blue, ConsoleColor_Black);
+        startX += length;
+    }
+
+    for (int i = 0; i < getPlayer1()->getStrength(); i++)
+    {
+        getRenderSystem()->drawChar(startX, 0, 3, ConsoleColor_DarkRed, ConsoleColor_Black);
+        startX += 2;
+    }
+    length = sprintf_s(buffer, "Score: %d", getPlayer1()->getScore());
+    getRenderSystem()->drawText(++startX, 0, buffer, ConsoleColor_Grey, ConsoleColor_Black);
+    startX += length;
+
+    if (m_players > 1)
+    {
+        startX++;
+        length = sprintf_s(buffer, "P1: ");
+        getRenderSystem()->drawText(startX, 0, buffer, ConsoleColor_Yellow, ConsoleColor_Black);
+        startX += length;
+
+        for (int i = 0; i < getPlayer2()->getStrength(); i++)
+        {
+            getRenderSystem()->drawChar(startX, 0, 3, ConsoleColor_DarkRed, ConsoleColor_Black);
+            startX += 2;
+        }
+        sprintf_s(buffer, "Score: %d", getPlayer2()->getScore());
+        getRenderSystem()->drawText(++startX, 0, buffer, ConsoleColor_Grey, ConsoleColor_Black);
+    }
 }
 
 void SpaceInvaders::update(float dt)
 {
-    if (isKeyDown(VK_LEFT))
+    if (getPlayer1()->getStrength() > 0)
     {
-        getPlayer()->setXSpeed(-SHIP_SPEED);
+        if (isKeyDown(VK_LEFT))
+        {
+            getPlayer1()->setXSpeed(-SHIP_SPEED);
+        }
+        else if (isKeyDown(VK_RIGHT))
+        {
+            getPlayer1()->setXSpeed(SHIP_SPEED);
+        }
+        if (isKeyDown(VK_UP) && getPlayer1()->getFireCooldown() <= 0)
+        {
+            getPlayer1()->updateFireCooldown();
+            GameObject* bullet = initializeObject(new Bullet(getPlayer1()), GameObjectType_Bullet,
+                getPlayer1()->getX(), getPlayer1()->getY() - 1,
+                getLevel()->getRenderCellSymbol(CellSymbol_Bullet),
+                getLevel()->getRenderCellSymbolColor(CellSymbol_Bullet),
+                getLevel()->getRenderCellSymbolBackgroundColor(CellSymbol_Bullet));
+            bullet->setYSpeed(-BULLET_SPEED);
+        }
     }
-    else if (isKeyDown(VK_RIGHT))
+    if (m_players > 1 && getPlayer2()->getStrength() > 0)
     {
-        getPlayer()->setXSpeed(SHIP_SPEED);
+        if (isKeyDown('A'))
+        {
+            getPlayer2()->setXSpeed(-SHIP_SPEED);
+        }
+        else if (isKeyDown('D'))
+        {
+            getPlayer2()->setXSpeed(SHIP_SPEED);
+        }
+        if (isKeyDown('W') && getPlayer2()->getFireCooldown() <= 0)
+        {
+            getPlayer2()->updateFireCooldown();
+            GameObject* bullet = initializeObject(new Bullet(getPlayer2()), GameObjectType_Bullet,
+                getPlayer2()->getX(), getPlayer2()->getY() - 1,
+                getLevel()->getRenderCellSymbol(CellSymbol_Bullet),
+                getLevel()->getRenderCellSymbolColor(CellSymbol_Bullet),
+                getLevel()->getRenderCellSymbolBackgroundColor(CellSymbol_Bullet));
+            bullet->setYSpeed(-BULLET_SPEED);
+        }
     }
-    if (isKeyDown(VK_UP) && getPlayer()->getFireCooldown() <= 0)
-    {
-        getPlayer()->updateFireCooldown();
-        GameObject* bullet = initializeObject(new Bullet(getPlayer()), GameObjectType_Bullet,
-            getPlayer()->getX(), getPlayer()->getY() - 1,
-            getLevel()->getRenderCellSymbol(CellSymbol_Bullet),
-            getLevel()->getRenderCellSymbolColor(CellSymbol_Bullet),
-            getLevel()->getRenderCellSymbolBackgroundColor(CellSymbol_Bullet));
-        bullet->setYSpeed(-BULLET_SPEED);
-    }
+
     if (isKeyDown('N') && m_restartLevelCooldown <= 0.0)
     {
         nextLevelOrEnd();
@@ -127,7 +203,6 @@ void SpaceInvaders::update(float dt)
     {
         m_restartLevelCooldown -= dt;
     }
-    
     
     bool haveAliveAliens = false;
 
@@ -193,7 +268,15 @@ void SpaceInvaders::update(float dt)
                             if (player->tryKill())
                             {
                                 planDelete(player);
-                                setGameActive(false);
+                                if (m_players == 1)
+                                {
+                                    setGameActive(false);
+                                }
+                                else if (getPlayer1()->getStrength() <= 0 && getPlayer2()->getStrength() <= 0)
+                                {
+                                    
+                                    setGameActive(false);
+                                }
                             }
                             planDelete(bullet);
                         }

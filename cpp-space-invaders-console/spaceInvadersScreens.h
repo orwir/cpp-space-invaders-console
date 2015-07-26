@@ -55,7 +55,7 @@ protected:
         {
             for (int x = 0; x < SCREEN_WIDTH; x++)
             {
-                getRenderSystem()->drawChar(x, y, logoData[y][x], GetSymbolColor(logoData[y][x]), ConsoleColor_Black);
+                getRenderSystem()->drawChar(x, y, ' ', GetSymbolColor(logoData[y][x]), GetSymbolColor(logoData[y][x]));
             }
         }
 
@@ -78,7 +78,85 @@ protected:
 
 class Menu : public Screen
 {
+public:
+    Menu() : Screen()
+    {
+        m_selected = 0;
+        m_menuItems = 2;
+    }
 
+    int getSelected() { return m_selected; }
+
+protected:
+    void render()
+    {
+        char buffer[SCREEN_WIDTH];
+        int length = sprintf_s(buffer, "SPACE INVADERS");
+        int x = SCREEN_WIDTH / 2 - length / 2;
+        getRenderSystem()->drawText(x, 1, buffer, ConsoleColor_Blue, ConsoleColor_Black);
+        
+        int y = SCREEN_HEIGHT / 2 - m_menuItems;
+        for (int i = 0; i < m_menuItems; i++)
+        {
+            ConsoleColor background = i == m_selected ? ConsoleColor_DarkGrey : ConsoleColor_Black;
+            length = sprintf_s(buffer, getMenuItemName(i));
+            x = SCREEN_WIDTH / 2 - length / 2;
+            getRenderSystem()->drawText(x, y + i * 2, buffer, ConsoleColor_White, background);
+        }
+    }
+
+    void update(float dt)
+    {
+        if (isKeyDown(VK_DOWN) && m_KeyPressCooldown <= 0)
+        {
+            if (m_selected < m_menuItems-1)
+            {
+                m_selected++;
+            }
+            else
+            {
+                m_selected = 0;
+            }
+            m_KeyPressCooldown = KEY_PRESS_COOLDOWN;
+        }
+        if (isKeyDown(VK_UP) && m_KeyPressCooldown <= 0)
+        {
+            if (m_selected > 0)
+            {
+                m_selected--;
+            }
+            else
+            {
+                m_selected = m_menuItems-1;
+            }
+            m_KeyPressCooldown = KEY_PRESS_COOLDOWN;
+        }
+        if (isKeyDown(VK_RETURN) && m_KeyPressCooldown <= 0)
+        {
+            close();
+            m_KeyPressCooldown = KEY_PRESS_COOLDOWN;
+        }
+
+        if (m_KeyPressCooldown > 0)
+        {
+            m_KeyPressCooldown -= dt;
+        }
+    }
+private:
+    const float KEY_PRESS_COOLDOWN = .3;
+    int m_selected;
+    int m_menuItems;
+    float m_KeyPressCooldown;
+
+    const char* getMenuItemName(int item)
+    {
+        switch (item)
+        {
+        case 0: return "1 Player";
+        case 1: return "2 Players";
+        }
+        return "";
+    }
 };
 
 class LevelDivider : public Screen
@@ -119,9 +197,10 @@ protected:
 class GameOver : public Screen
 {
 public:
-    GameOver(Player* player) : Screen()
+    GameOver(Player* player1, Player* player2) : Screen()
     {
-        m_player = player;
+        m_player1 = player1;
+        m_player2 = player2;
     }
     
 protected:
@@ -132,13 +211,27 @@ protected:
         int x = SCREEN_WIDTH / 2 - length / 2;
         getRenderSystem()->drawText(x, SCREEN_HEIGHT / 2 - 2, buffer, ConsoleColor_White, ConsoleColor_Black);
 
-        length = sprintf_s(buffer, "Your score: %d", m_player->getScore());
-        x = SCREEN_WIDTH / 2 - length / 2;
-        getRenderSystem()->drawText(x, SCREEN_HEIGHT / 2, buffer, ConsoleColor_Grey, ConsoleColor_Black);
+        int players = m_player2 == 0 ? 1 : 2;
+        if (players == 1)
+        {
+            length = sprintf_s(buffer, "Your score: %d", m_player1->getScore());
+            x = SCREEN_WIDTH / 2 - length / 2;
+            getRenderSystem()->drawText(x, SCREEN_HEIGHT / 2, buffer, ConsoleColor_Grey, ConsoleColor_Black);
+        }
+        else
+        {
+            length = sprintf_s(buffer, "Player 1 score: %d", m_player1->getScore());
+            x = SCREEN_WIDTH / 2 - length / 2;
+            getRenderSystem()->drawText(x, SCREEN_HEIGHT / 2, buffer, ConsoleColor_Grey, ConsoleColor_Black);
+
+            length = sprintf_s(buffer, "Player 2 score: %d", m_player2->getScore());
+            x = SCREEN_WIDTH / 2 - length / 2;
+            getRenderSystem()->drawText(x, SCREEN_HEIGHT / 2 + 2, buffer, ConsoleColor_Grey, ConsoleColor_Black);
+        }
 
         length = sprintf_s(buffer, "Press 'Q' to exit...");
         x = SCREEN_WIDTH / 2 - length / 2;
-        getRenderSystem()->drawText(x, SCREEN_HEIGHT / 2 + 2, buffer, ConsoleColor_Grey, ConsoleColor_Black);
+        getRenderSystem()->drawText(x, SCREEN_HEIGHT / 2 + players * 3, buffer, ConsoleColor_Grey, ConsoleColor_Black);
     }
 
     void update(float dt)
@@ -150,6 +243,7 @@ protected:
     }
 
 private:
-    Player* m_player;
+    Player* m_player1;
+    Player* m_player2;
 
 };
