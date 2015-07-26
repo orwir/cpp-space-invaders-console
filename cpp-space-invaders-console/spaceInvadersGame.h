@@ -3,13 +3,6 @@
 #include "game.h"
 #include "spaceInvadersObjects.h"
 
-enum SIObjectType : GameObjectType
-{
-    GameObjectType_Ship,
-    GameObjectType_Bullet,
-    GameObjectType_Alien
-};
-
 class SpaceInvaders : public Game
 {
 public:
@@ -37,4 +30,5 @@ private:
     float m_alienAmplitudeTime;
     float m_alienFireCooldown;
     float m_restartLevelCooldown;
+    float m_freezeAliensTime;
 };

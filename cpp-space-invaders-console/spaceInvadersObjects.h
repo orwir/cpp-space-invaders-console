@@ -12,12 +12,31 @@ const float ALIEN_AMPLITUDE = 7.0;
 const float ALIEN_SPEED = 0.18;
 const float ALIEN_FIRE_COOLDOWN = 2.08;
 
+const float BOUNS_FAST_RELOAD_CHANCE = 8;
+const float BONUS_DOUBLE_FIRE_CHANCE = 6;
+const float BONUS_FREEZE_CHANCE = 4;
+const float BONUS_SPEED = 3;
+const float BONUS_FAST_RELOAD_COOLDOWN = 0.02;
+const float BONUS_FAST_RELOAD_TIME = 2.88;
+const float BONUS_DOUBLE_FIRE_TIME = 2.33;
+const float BONUS_FREEZE_TIME = 2.48;
+
 const unsigned char CellSymbol_Player      = 'P';
 const unsigned char CellSymbol_Bullet      = '|';
 const unsigned char CellSymbol_Alien       = 'X';
 const unsigned char CellSymbol_AlienSpread = 'S';
 const unsigned char CellSymbol_AlienBrood  = 'B';
 const unsigned char CellSymbol_AlienTank   = 'T';
+
+enum SIObjectType : GameObjectType
+{
+    GameObjectType_Ship,
+    GameObjectType_Bullet,
+    GameObjectType_Alien,
+    GameObjectType_FastReload,
+    GameObjectType_DoubleFire,
+    GameObjectType_Freeze
+};
 
 class Ship : public GameObject
 {
@@ -65,19 +84,36 @@ public:
         {
             m_currentFireCooldown -= dt;
         }
+        if (m_bonusReloadTime > 0)
+        {
+            m_bonusReloadTime -= dt;
+        }
+        if (m_bonusDoubleFireTime > 0)
+        {
+            m_bonusDoubleFireTime -= dt;
+        }
     }
+
+    void applyBonusFastReload() { m_bonusReloadTime = BONUS_FAST_RELOAD_TIME; }
+    void applyBonusDoubleFire() { m_bonusDoubleFireTime = BONUS_DOUBLE_FIRE_TIME; }
+    bool isBonusDoubleFire() { return m_bonusDoubleFireTime > 0; }
 
     int getScore() { return m_score; }
     void setScore(int score) { m_score = score; }
     void addScore(int score) { m_score += score; }
 
     float getFireCooldown() { return m_currentFireCooldown; }
-    void updateFireCooldown() { m_currentFireCooldown = m_fireCooldown; }
+    void updateFireCooldown()
+    {
+        m_currentFireCooldown = m_bonusReloadTime > 0 ? BONUS_FAST_RELOAD_COOLDOWN : m_fireCooldown;
+    }
 
 private:
     int m_score;
     float m_fireCooldown;
     float m_currentFireCooldown;
+    float m_bonusReloadTime;
+    float m_bonusDoubleFireTime;
 };
 
 class Alien : public Ship

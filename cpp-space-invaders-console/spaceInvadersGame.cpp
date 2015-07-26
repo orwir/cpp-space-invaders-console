@@ -39,6 +39,7 @@ void SpaceInvaders::initialize()
     m_player1 = 0;
     m_player2 = 0;
     m_alienAmplitudeTime = 0.0;
+    m_freezeAliensTime = 0;
     m_alienFireCooldown = ALIEN_FIRE_COOLDOWN - (getCurrentLevel() * 0.23);
     m_restartLevelCooldown = LEVEL_RESTART_COOLDOWN;
 
@@ -171,6 +172,19 @@ void SpaceInvaders::update(float dt)
                 getLevel()->getRenderCellSymbolColor(CellSymbol_Bullet),
                 getLevel()->getRenderCellSymbolBackgroundColor(CellSymbol_Bullet));
             bullet->setYSpeed(-BULLET_SPEED);
+            
+            if (getPlayer1()->isBonusDoubleFire())
+            {
+                GameObject* bullet2 = initializeObject(new Bullet(getPlayer1()), GameObjectType_Bullet,
+                    getPlayer1()->getX(), getPlayer1()->getY() - 1,
+                    getLevel()->getRenderCellSymbol(CellSymbol_Bullet),
+                    getLevel()->getRenderCellSymbolColor(CellSymbol_Bullet),
+                    getLevel()->getRenderCellSymbolBackgroundColor(CellSymbol_Bullet));
+                bullet2->setYSpeed(-BULLET_SPEED);
+                
+                bullet->setX(bullet->getX() - 1);
+                bullet2->setX(bullet->getX() + 1);
+            }
         }
     }
     if (m_players > 1 && getPlayer2()->getStrength() > 0)
@@ -192,6 +206,18 @@ void SpaceInvaders::update(float dt)
                 getLevel()->getRenderCellSymbolColor(CellSymbol_Bullet),
                 getLevel()->getRenderCellSymbolBackgroundColor(CellSymbol_Bullet));
             bullet->setYSpeed(-BULLET_SPEED);
+            if (getPlayer2()->isBonusDoubleFire())
+            {
+                GameObject* bullet2 = initializeObject(new Bullet(getPlayer2()), GameObjectType_Bullet,
+                    getPlayer2()->getX(), getPlayer2()->getY() - 1,
+                    getLevel()->getRenderCellSymbol(CellSymbol_Bullet),
+                    getLevel()->getRenderCellSymbolColor(CellSymbol_Bullet),
+                    getLevel()->getRenderCellSymbolBackgroundColor(CellSymbol_Bullet));
+                bullet2->setYSpeed(-BULLET_SPEED);
+
+                bullet->setX(bullet->getX() - 1);
+                bullet2->setX(bullet->getX() + 1);
+            }
         }
     }
 
@@ -214,7 +240,9 @@ void SpaceInvaders::update(float dt)
             continue;
         }
 
-        object->update(dt);
+        if (!(m_freezeAliensTime > 0 && object->getType() == GameObjectType_Alien)) {
+            object->update(dt);
+        }
         switch (object->getType())
         {
         case GameObjectType_Alien:
@@ -225,7 +253,7 @@ void SpaceInvaders::update(float dt)
             {
                 setGameActive(false);
             }
-            else
+            else if(m_freezeAliensTime <= 0)
             {
                 alien->setXSpeed(ALIEN_AMPLITUDE * cos(m_alienAmplitudeTime));
             }
@@ -257,6 +285,37 @@ void SpaceInvaders::update(float dt)
                             {
                                 player->addScore(alien->getWorth());
                                 planDelete(alien);
+
+                                if (rand() % 1000 <= BOUNS_FAST_RELOAD_CHANCE)
+                                {
+                                    GameObject* bonus = initializeObject(new GameObject(), GameObjectType_FastReload,
+                                        alien->getX(),
+                                        alien->getY(),
+                                        'R',
+                                        ConsoleColor_Blue,
+                                        ConsoleColor_Black);
+                                    bonus->setYSpeed(BONUS_SPEED);
+                                }
+                                else if (rand() % 1000 <= BONUS_DOUBLE_FIRE_CHANCE)
+                                {
+                                    GameObject* bonus = initializeObject(new GameObject(), GameObjectType_DoubleFire,
+                                        alien->getX(),
+                                        alien->getY(),
+                                        'D',
+                                        ConsoleColor_Red,
+                                        ConsoleColor_Black);
+                                    bonus->setYSpeed(BONUS_SPEED);
+                                }
+                                else if (rand() % 1000 <= BONUS_FREEZE_CHANCE)
+                                {
+                                    GameObject* bonus = initializeObject(new GameObject(), GameObjectType_Freeze,
+                                        alien->getX(),
+                                        alien->getY(),
+                                        'F',
+                                        ConsoleColor_Cyan,
+                                        ConsoleColor_Black);
+                                    bonus->setYSpeed(BONUS_SPEED);
+                                }
                             }
                             planDelete(bullet);
                         }
@@ -264,7 +323,7 @@ void SpaceInvaders::update(float dt)
                         {
                             Player* player = (Player*)subject;
                             Alien* alien = (Alien*)bullet->getShooter();
-                            
+
                             if (player->tryKill())
                             {
                                 planDelete(player);
@@ -274,7 +333,7 @@ void SpaceInvaders::update(float dt)
                                 }
                                 else if (getPlayer1()->getStrength() <= 0 && getPlayer2()->getStrength() <= 0)
                                 {
-                                    
+
                                     setGameActive(false);
                                 }
                             }
@@ -285,10 +344,73 @@ void SpaceInvaders::update(float dt)
                 }
             }
             break;
+
+        case GameObjectType_FastReload:
+        {
+            Player* player1 = getPlayer1();
+            Player* player2 = getPlayer2();
+
+            if (object->intersects(player1))
+            {
+                player1->applyBonusFastReload();
+                planDelete(object);
+            }
+            else if (player2 != 0 && object->intersects(player2))
+            {
+                player2->applyBonusFastReload();
+                planDelete(object);
+            }
+            else if (object->getY() > SCREEN_HEIGHT)
+            {
+                planDelete(object);
+            }
+            break;
+        }
+        case GameObjectType_DoubleFire:
+        {
+            Player* player1 = getPlayer1();
+            Player* player2 = getPlayer2();
+
+            if (object->intersects(player1))
+            {
+                player1->applyBonusDoubleFire();
+                planDelete(object);
+            }
+            else if (player2 != 0 && object->intersects(player2))
+            {
+                player2->applyBonusDoubleFire();
+                planDelete(object);
+            }
+            else if (object->getY() > SCREEN_HEIGHT)
+            {
+                planDelete(object);
+            }
+            break;
+        }
+        case GameObjectType_Freeze:
+        {
+            Player* player1 = getPlayer1();
+            Player* player2 = getPlayer2();
+
+            if (object->intersects(player1) || (player2 != 0 && object->intersects(player2)))
+            {
+                m_freezeAliensTime = BONUS_FREEZE_TIME;
+                planDelete(object);
+            }
+            else if (object->getY() > SCREEN_HEIGHT)
+            {
+                planDelete(object);
+            }
+
+            break;
+        }
         }
     }
 
-    m_alienAmplitudeTime += dt;
+    if (m_freezeAliensTime <= 0)
+    {
+        m_alienAmplitudeTime += dt;
+    }
     if (m_alienFireCooldown > 0)
     {
         m_alienFireCooldown -= dt;
@@ -311,6 +433,10 @@ void SpaceInvaders::update(float dt)
             getLevel()->getRenderCellSymbolBackgroundColor(CellSymbol_Bullet));
         bullet->setYSpeed(BULLET_SPEED);
         m_alienFireCooldown = ALIEN_FIRE_COOLDOWN;
+    }
+    if (m_freezeAliensTime > 0)
+    {
+        m_freezeAliensTime -= dt;
     }
 
     if (!haveAliveAliens)
